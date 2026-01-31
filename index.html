@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rentify - Enterprise Rental Management Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .testimonial-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .nav-blur {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Professional Navigation -->
+    <nav class="fixed w-full top-0 z-50 nav-blur border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-cube text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold text-gray-900">Rentify</span>
+                        <span class="text-xs text-gray-500 block">Enterprise Platform</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex items-center space-x-8">
+                </div>
+
+                <!-- Right side buttons -->
+                <div class="hidden lg:flex items-center space-x-4">
+                    <a href="login.php" class="text-gray-700 hover:text-indigo-600 px-4 py-2 font-medium transition">
+                        Sign In
+                    </a>
+                    <a href="register.php" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold">
+                        Get Started
+                    </a>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="lg:hidden">
+                    <button id="mobile-menu-button" class="text-gray-700 hover:text-indigo-600 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t">
+            <div class="px-4 py-4 space-y-3">
+                <a href="login.php" class="block text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Sign In</a>
+                <a href="register.php" class="block btn-primary text-white px-3 py-2 rounded-xl text-center font-medium">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Professional Hero Section -->
+    <section class="hero-gradient pt-20 min-h-screen flex items-center relative">
+        <div class="absolute inset-0 bg-black opacity-5"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="slide-in">
+                    <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        <span class="text-white/90 text-sm font-medium">Trusted by 500+ Enterprise Clients</span>
+                    </div>
+                    <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                        Transform Your
+                        <span class="block text-yellow-300">Rental Business</span>
+                        with AI-Powered
+                        <span class="gradient-text">Intelligence</span>
+                    </h1>
+                    <p class="text-xl text-white/90 mb-8 leading-relaxed">
+                        Enterprise-grade rental management platform that automates workflows, prevents revenue loss, and scales with your business. Join industry leaders who've increased revenue by 45% on average.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                        <a href="register.php" class="bg-white text-indigo-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-100 transition transform hover:scale-105 shadow-xl">
+                            Start Free Trial
+                        </a>
+                        <a href="#demo" class="glass-effect text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/20 transition">
+                            <i class="fas fa-play mr-2"></i> Watch Demo
+                        </a>
+                    </div>
+                    <div class="flex items-center space-x-8 text-white/80">
+                        <div>
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                                <span class="text-sm">No credit card required</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                                <span class="text-sm">14-day free trial</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="floating">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl transform rotate-6"></div>
+                        <div class="relative bg-white rounded-3xl p-8 shadow-2xl">
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between pb-4 border-b">
+                                    <span class="text-gray-600">Live Dashboard</span>
+                                    <span class="flex items-center">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                                        <span class="text-sm text-green-600">Real-time</span>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-4 rounded-xl">
+                                        <div class="text-3xl font-bold text-indigo-600">$2.4M</div>
+                                        <div class="text-sm text-gray-600">Revenue This Month</div>
+                                        <div class="text-xs text-green-600 mt-1">↑ 23% from last month</div>
+                                    </div>
+                                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-xl">
+                                        <div class="text-3xl font-bold text-green-600">1,247</div>
+                                        <div class="text-sm text-gray-600">Active Rentals</div>
+                                        <div class="text-xs text-green-600 mt-1">↑ 15% from last month</div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Inventory Utilization</span>
+                                        <span class="text-sm font-semibold">87%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style="width: 87%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text mb-2">500+</div>
+                    <div class="text-gray-600">Enterprise Clients</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text mb-2">$50M+</div>
+                    <div class="text-gray-600">Revenue Processed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text mb-2">99.9%</div>
+                    <div class="text-gray-600">Uptime SLA</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl lg:text-5xl font-bold gradient-text mb-2">45%</div>
+                    <div class="text-gray-600">Avg. Revenue Increase</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Professional Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center px-4 py-2 bg-indigo-100 rounded-full mb-4">
+                    <i class="fas fa-star text-yellow-500 mr-2"></i>
+                    <span class="text-indigo-700 font-semibold">4.9/5 Customer Rating</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                    Trusted by Industry Leaders
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    See how top companies are transforming their rental operations with Rentify
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/sarah-ceo/80/80.jpg" alt="Sarah Johnson" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">Sarah Johnson</h4>
+                            <p class="text-sm text-gray-600">CEO, Equipment Rentals Co.</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-building text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">Fortune 500 Company</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "Rentify's AI-powered inventory management eliminated double-bookings entirely and increased our utilization rate from 65% to 92%. The ROI was evident within the first quarter."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i>
+                        <span class="font-semibold text-green-600">+45% Revenue</span>
+                        <span class="mx-2">•</span>
+                        <span>Implemented in 3 weeks</span>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/michael-ops/80/80.jpg" alt="Michael Chen" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">Michael Chen</h4>
+                            <p class="text-sm text-gray-600">Operations Director, PartyPro</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-building text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">Market Leader</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "The automated quotation and invoicing system reduced our processing time by 80%. Our clients love the professional experience, and our team can focus on growth instead of paperwork."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-clock text-blue-500 mr-2"></i>
+                        <span class="font-semibold text-blue-600">-80% Processing Time</span>
+                        <span class="mx-2">•</span>
+                        <span>1000+ Monthly Orders</span>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/emily-owner/80/80.jpg" alt="Emily Rodriguez" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">Emily Rodriguez</h4>
+                            <p class="text-sm text-gray-600">Founder, Furniture Hub</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-award text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">Industry Award Winner</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "We scaled from 100 to 5,000+ rentals monthly without adding staff. Rentify's automation and analytics are game-changers for growing rental businesses."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-rocket text-purple-500 mr-2"></i>
+                        <span class="font-semibold text-purple-600">50x Scale</span>
+                        <span class="mx-2">•</span>
+                        <span>Same Team Size</span>
+                    </div>
+                </div>
+
+                <!-- Testimonial 4 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/david-tech/80/80.jpg" alt="David Kim" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">David Kim</h4>
+                            <p class="text-sm text-gray-600">CTO, TechRent Solutions</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-globe text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">Global Operations</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "The API integration and custom reporting capabilities allow us to seamlessly integrate Rentify with our existing ERP. The support team is exceptional."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-code text-indigo-500 mr-2"></i>
+                        <span class="font-semibold text-indigo-600">Full API Access</span>
+                        <span class="mx-2">•</span>
+                        <span>Custom Integrations</span>
+                    </div>
+                </div>
+
+                <!-- Testimonial 5 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/lisa-founder/80/80.jpg" alt="Lisa Thompson" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">Lisa Thompson</h4>
+                            <p class="text-sm text-gray-600">Founder, Event Essentials</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-trophy text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">Fastest Growing Company</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "Rentify's mobile app and customer portal have transformed our client experience. We've seen a 60% reduction in support tickets and customer satisfaction scores are at an all-time high."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-mobile-alt text-green-500 mr-2"></i>
+                        <span class="font-semibold text-green-600">Mobile First</span>
+                        <span class="mx-2">•</span>
+                        <span>5-Star Reviews</span>
+                    </div>
+                </div>
+
+                <!-- Testimonial 6 -->
+                <div class="testimonial-card p-8 rounded-2xl card-hover">
+                    <div class="flex items-center mb-6">
+                        <img src="https://picsum.photos/seed/james-gm/80/80.jpg" alt="James Wilson" class="w-16 h-16 rounded-full mr-4 border-4 border-indigo-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg">James Wilson</h4>
+                            <p class="text-sm text-gray-600">General Manager, Vehicle Rentals Plus</p>
+                            <div class="flex items-center mt-1">
+                                <i class="fas fa-car text-gray-400 text-xs mr-1"></i>
+                                <span class="text-xs text-gray-500">National Chain</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <span class="text-yellow-400 text-lg">★★★★★</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        "The GPS tracking and automated maintenance scheduling have revolutionized our fleet management. We've reduced operational costs by 35% while improving service quality."
+                    </p>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                        <span class="font-semibold text-red-600">GPS Tracking</span>
+                        <span class="mx-2">•</span>
+                        <span>500+ Vehicle Fleet</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enterprise CTA Section -->
+    <section class="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden">
+        <div class="absolute inset-0 bg-black opacity-10"></div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
+                <i class="fas fa-shield-alt text-white mr-2"></i>
+                <span class="text-white font-medium">Enterprise-Grade Security</span>
+            </div>
+            <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Ready to Scale Your Rental Business?
+            </h2>
+            <p class="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
+                Join industry leaders who trust Rentify for their mission-critical rental operations. Start your 14-day free trial with full enterprise features.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="register.php" class="bg-white text-indigo-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-100 transition transform hover:scale-105 shadow-xl">
+                    Scale with Rentify
+                </a>
+                <a href="#contact" class="glass-effect text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/20 transition">
+                    <i class="fas fa-phone mr-2"></i> Contact Sales
+                </a>
+            </div>
+            <div class="mt-8 flex items-center justify-center space-x-8 text-white/80">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                    <span class="text-sm">No setup fees</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                    <span class="text-sm">Free migration service</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                    <span class="text-sm">24/7 Enterprise support</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Professional Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-cube text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold">Rentify</span>
+                            <span class="text-xs text-gray-400 block">Enterprise Platform</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        The world's leading enterprise rental management platform, trusted by industry leaders worldwide.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-youtube text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-6 text-white">Product</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition">Features</a></li>
+                        <li><a href="#pricing" class="text-gray-400 hover:text-white transition">Pricing</a></li>
+                        <li><a href="#enterprise" class="text-gray-400 hover:text-white transition">Enterprise</a></li>
+                        <li><a href="#api" class="text-gray-400 hover:text-white transition">API Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-6 text-white">Company</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#about" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                        <li><a href="#careers" class="text-gray-400 hover:text-white transition">Careers</a></li>
+                        <li><a href="#blog" class="text-gray-400 hover:text-white transition">Blog</a></li>
+                        <li><a href="#press" class="text-gray-400 hover:text-white transition">Press Kit</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-6 text-white">Support</h4>
+                    <ul class="space-y-3">
+                        <li><a href="login.php" class="text-gray-400 hover:text-white transition">Login</a></li>
+                        <li><a href="#help" class="text-gray-400 hover:text-white transition">Help Center</a></li>
+                        <li><a href="#contact" class="text-gray-400 hover:text-white transition">Contact Us</a></li>
+                        <li><a href="#status" class="text-gray-400 hover:text-white transition">System Status</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 mb-4 md:mb-0">
+                    &copy; 2024 Rentify. All rights reserved. Enterprise Rental Management Platform.
+                </p>
+                <div class="flex space-x-6 text-gray-400">
+                    <a href="#privacy" class="hover:text-white transition">Privacy Policy</a>
+                    <a href="#terms" class="hover:text-white transition">Terms of Service</a>
+                    <a href="#security" class="hover:text-white transition">Security</a>
+                    <a href="#compliance" class="hover:text-white transition">Compliance</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to navigation
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('shadow-lg');
+            } else {
+                nav.classList.remove('shadow-lg');
+            }
+        });
+
+        // Animate stats on scroll
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe stats counters
+        document.querySelectorAll('.gradient-text').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
