@@ -1,4 +1,4 @@
-🚀 Rental Management System
+#🚀 Rental Management System
 
 A full-stack web application that enables businesses to manage product rentals efficiently by handling quotations, rental orders, inventory reservation, invoicing, payments, pickups, returns, and reports.
 
