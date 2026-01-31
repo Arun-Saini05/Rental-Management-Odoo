@@ -1,149 +1,95 @@
-#🚀 Rental Management System
+# 🚀 Rental Management System
 
-A full-stack web application that enables businesses to manage product rentals efficiently by handling quotations, rental orders, inventory reservation, invoicing, payments, pickups, returns, and reports.
+A full-stack web application that helps businesses manage product rentals by handling quotations, rental orders, inventory reservations, invoicing, payments, pickups, returns, and reports.
 
-This project models a real-world rental business workflow similar to ERP systems used in industry.
+This project follows a real-world ERP-style rental workflow.
 
-📌 Features
+---
 
-🔐 Role-based authentication (Admin, Vendor, Customer)
+## 📌 Features
 
-🛒 Rentable product management
+- Role-based authentication (Admin, Vendor, Customer)
+- Rentable product management
+- Time-based pricing (Hourly / Daily / Weekly / Custom)
+- Inventory reservation to prevent double booking
+- Rental quotations and confirmed rental orders
+- Pickup and return management with late fee handling
+- Invoice generation with partial and full payments
+- Customer portal for order and invoice tracking
+- Dashboards and business reports
 
-⏱️ Time-based pricing (Hourly / Daily / Weekly / Custom)
+---
 
-📅 Inventory reservation to prevent double booking
+## 👥 User Roles
 
-📝 Rental quotations → confirmed rental orders
+### Customer
+- Browse rental products
+- Create and confirm rental quotations
+- Make online payments
+- View invoices and order history
 
-🚚 Pickup & return management with late fee handling
+### Vendor
+- Manage rental products
+- Process rental orders
+- Track pickups and returns
+- Generate invoices
+- View earnings and performance
 
-💰 Invoice generation with partial/full payments
+### Admin
+- Manage users and vendors
+- Configure system settings
+- Monitor global analytics and reports
 
-🌐 Customer portal with order & invoice tracking
+---
 
-📊 Dashboards and business reports
+## 🔁 Rental Workflow
 
-👥 User Roles
-Customer
+Product Browsing  
+→ Rental Quotation  
+→ Rental Order Confirmation  
+→ Inventory Reservation  
+→ Pickup / Delivery  
+→ Return  
+→ Invoice & Payment  
+→ Reports & Analytics  
 
-Browse rental products
+---
 
-Create and confirm rental quotations
+## 🧠 Key Concepts Implemented
 
-Make payments
+- ERP-style end-to-end workflow
+- Inventory reservation logic
+- Time-based rental pricing
+- Role-based access control
+- Invoice and payment status tracking
+- Real-world business rule modeling
 
-View invoices and order history
+---
 
-Vendor
+## 🛠 Tech Stack
 
-Manage rental products
+- Frontend: HTML, CSS, JavaScript  
+- Backend: PHP  
+- Database: MySQL  
+- Server: Apache (XAMPP)  
+- Tools: VS Code, Git, GitHub  
 
-Process rental orders
+---
 
-Track pickups and returns
+## ⚙️ Installation & Setup
 
-Generate invoices and view earnings
+1. Clone the repository:
+      ```bash
+   git clone https://github.com/your-username/rental-management-system.git
+2. Move the project folder to:
+      xampp/htdocs/
 
-Admin
+3. Create a database in phpMyAdmin and import the .sql file.
+   
+4. Update database credentials in:
+      config/db.php
 
-Manage users and vendors
+5. Start Apache and MySQL.
 
-Configure rental rules and pricing
-
-Monitor system-wide analytics and reports
-
-🔁 Rental Workflow
-Product Browsing
-      ↓
-Rental Quotation
-      ↓
-Rental Order Confirmation
-      ↓
-Inventory Reservation
-      ↓
-Pickup / Delivery
-      ↓
-Return
-      ↓
-Invoice & Payment
-      ↓
-Reports & Analytics
-
-🧠 Key Concepts Implemented
-
-ERP-style end-to-end workflow
-
-Inventory reservation logic
-
-Time-based rental pricing
-
-Role-based access control
-
-Invoice and payment state tracking
-
-Real-world business rule modeling
-
-🛠 Tech Stack
-
-Frontend: HTML, CSS, JavaScript
-
-Backend: PHP
-
-Database: MySQL
-
-Server: Apache (XAMPP)
-
-Tools: VS Code, Git, GitHub
-
-⚙️ Installation & Setup
-
-Clone the repository
-
-git clone https://github.com/your-username/rental-management-system.git
-
-
-Move the project to htdocs (XAMPP)
-
-Import the database:
-
-Open phpMyAdmin
-
-Create a database
-
-Import the provided .sql file
-
-Update database credentials in:
-
-config/db.php
-
-
-Start Apache & MySQL and open:
-
-http://localhost/rental-management-system
-
-📈 Future Enhancements
-
-Mobile app integration
-
-Multi-warehouse rental support
-
-Automated email/SMS reminders
-
-Advanced analytics dashboard
-
-Online contract & document signing
-
-🎯 Learning Outcomes
-
-Practical understanding of ERP workflows
-
-Real-world business logic implementation
-
-Full-stack development experience
-
-Clean system design and role separation
-
-📄 License
-
-This project is developed for educational and hackathon purposes.
+6. Open the application in a browser:
+   http://localhost/rental-management-system
