@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'config/functions.php';
+require('stripe-php-master/init.php');
 
 requireLogin();
 
@@ -14,6 +15,10 @@ if (empty($cart_items)) {
     exit();
 }
 
+$publishablekey = "pk_test_51SvmfbENuKuGRMUgZAN8CWsIBYnjTjmukidRY8Id3xQaW5kQum78U8CNqXZAUf5pFriLDT75Z2QS0MrMLoRRP56H00ngs1baeE";
+$key = "sk_test_51SvmfbENuKuGRMUg3EXcL3bq1CGwg6DLhPWMgD3XSX6XnEhydfQ613mqy5DEG0mNnHDYWBe5C0vlVa9ygl9q1WHR004rKMtjz1";
+\Stripe\Stripe::setApiKey($key);
+
 // Calculate totals
 $subtotal = 0;
 $delivery_charges = 10; // Fixed delivery charge
@@ -26,12 +31,91 @@ foreach ($cart_items as $item) {
 $tax_amount = $subtotal * $tax_rate;
 $total_amount = $subtotal + $tax_amount + $delivery_charges;
 
+// Convert to cents for Stripe
+$total_amount_cents = $total_amount * 100;
+
 // Get user addresses
 $addresses_sql = "SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC";
 $addresses_stmt = $db->prepare($addresses_sql);
 $addresses_stmt->bind_param("i", $_SESSION['user_id']);
 $addresses_stmt->execute();
 $addresses = $addresses_stmt->get_result();
+
+// Handle payment processing
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method_id'])) {
+    try {
+        $payment_method_id = $_POST['payment_method_id'];
+        $address_id = $_POST['address_id'];
+        
+        // Get address details
+        $address_sql = "SELECT * FROM addresses WHERE id = ? AND user_id = ?";
+        $address_stmt = $db->prepare($address_sql);
+        $address_stmt->bind_param("ii", $address_id, $_SESSION['user_id']);
+        $address_stmt->execute();
+        $address = $address_stmt->get_result()->fetch_assoc();
+        
+        if (!$address) {
+            throw new Exception('Invalid address selected');
+        }
+        
+        // Create payment intent
+        $payment_intent = \Stripe\PaymentIntent::create([
+            'amount' => $total_amount_cents,
+            'currency' => 'inr',
+            'payment_method' => $payment_method_id,
+            'confirmation_method' => 'manual',
+            'confirm' => true,
+            'return_url' => 'http://' . $_SERVER['HTTP_HOST'] . '/order-confirmation.php',
+            'metadata' => [
+                'user_id' => $_SESSION['user_id'],
+                'address_id' => $address_id,
+                'subtotal' => $subtotal,
+                'tax_amount' => $tax_amount,
+                'delivery_charges' => $delivery_charges
+            ]
+        ]);
+        
+        if ($payment_intent->status === 'succeeded') {
+            // Payment successful - create order
+            $order_sql = "INSERT INTO orders (user_id, address_id, subtotal, tax_amount, delivery_charges, total_amount, status, payment_status, stripe_payment_intent_id, created_at) 
+                         VALUES (?, ?, ?, ?, ?, ?, 'confirmed', 'paid', ?, NOW())";
+            $order_stmt = $db->prepare($order_sql);
+            $order_stmt->bind_param("iiddddis", $_SESSION['user_id'], $address_id, $subtotal, $tax_amount, $delivery_charges, $total_amount, $payment_intent->id);
+            $order_stmt->execute();
+            $order_id = $db->insert_id;
+            
+            // Add order items
+            foreach ($cart_items as $item) {
+                $order_item_sql = "INSERT INTO order_items (order_id, product_id, quantity, price, total_price) VALUES (?, ?, ?, ?, ?)";
+                $order_item_stmt = $db->prepare($order_item_sql);
+                $order_item_stmt->bind_param("iiidd", $order_id, $item['product_id'], $item['quantity'], $item['price'], $item['total_price']);
+                $order_item_stmt->execute();
+            }
+            
+            // Clear cart
+            unset($_SESSION['cart']);
+            
+            header('Location: order-confirmation.php?order_id=' . $order_id);
+            exit();
+        } elseif ($payment_intent->status === 'requires_action') {
+            // Payment requires additional authentication
+            echo json_encode([
+                'requires_action' => true,
+                'payment_intent_client_secret' => $payment_intent->client_secret
+            ]);
+            exit();
+        } else {
+            throw new Exception('Payment failed: ' . $payment_intent->status);
+        }
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'error' => true,
+            'message' => $e->getMessage()
+        ]);
+        exit();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -275,6 +359,87 @@ $addresses = $addresses_stmt->get_result();
         </div>
     </div>
 
+    <!-- Payment Section -->
+    <div id="payment-section" class="hidden">
+        <div class="container mx-auto px-4 py-8">
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Payment Information</h2>
+                    
+                    <!-- Stripe Payment Form -->
+                    <form id="payment-form" class="space-y-6">
+                        <!-- Cardholder Name -->
+                        <div>
+                            <label for="cardholder-name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Cardholder Name
+                            </label>
+                            <input type="text" id="cardholder-name" name="cardholder-name" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="John Doe">
+                        </div>
+                        
+                        <!-- Stripe Card Element -->
+                        <div>
+                            <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">
+                                Card Information
+                            </label>
+                            <div id="card-element" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <!-- Stripe Elements will create the card input here -->
+                            </div>
+                            <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
+                        </div>
+                        
+                        <!-- Order Summary -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-gray-800 mb-3">Order Summary</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Subtotal:</span>
+                                    <span>₹<?php echo number_format($subtotal, 2); ?></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Tax (18%):</span>
+                                    <span>₹<?php echo number_format($tax_amount, 2); ?></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Delivery:</span>
+                                    <span>₹<?php echo number_format($delivery_charges, 2); ?></span>
+                                </div>
+                                <div class="border-t pt-2 flex justify-between font-semibold">
+                                    <span>Total:</span>
+                                    <span>₹<?php echo number_format($total_amount, 2); ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Security Notice -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-lock text-blue-600 mr-3"></i>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-semibold">Secure Payment</p>
+                                    <p>Your payment information is encrypted and secure. We never store your card details.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" id="submit-button" 
+                                class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors">
+                            Pay ₹<?php echo number_format($total_amount, 2); ?>
+                        </button>
+                        
+                        <!-- Back Button -->
+                        <button type="button" onclick="document.getElementById('payment-section').classList.add('hidden')"
+                                class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold transition-colors">
+                            Back to Order Details
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Address Modal -->
     <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-screen overflow-y-auto">
@@ -337,6 +502,112 @@ $addresses = $addresses_stmt->get_result();
         </div>
     </footer>
 
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        // Initialize Stripe
+        const stripe = Stripe('<?php echo $publishablekey; ?>');
+        const elements = stripe.elements();
+        
+        // Create card element
+        const cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#424770',
+                    '::placeholder': {
+                        color: '#aab7c4',
+                    },
+                },
+            },
+        });
+        
+        // Mount card element
+        cardElement.mount('#card-element');
+        
+        // Handle card element errors
+        cardElement.on('change', ({error}) => {
+            const displayError = document.getElementById('card-errors');
+            if (error) {
+                displayError.textContent = error.message;
+            } else {
+                displayError.textContent = '';
+            }
+        });
+        
+        // Handle form submission
+        const form = document.getElementById('payment-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const submitButton = document.getElementById('submit-button');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            
+            const {error, paymentMethod} = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: document.getElementById('cardholder-name').value,
+                    email: '<?php echo $_SESSION['user_email'] ?? ''; ?>',
+                },
+            });
+            
+            if (error) {
+                document.getElementById('card-errors').textContent = error.message;
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Pay ₹<?php echo number_format($total_amount, 2); ?>';
+                return;
+            }
+            
+            // Send payment method to server
+            const formData = new FormData();
+            formData.append('payment_method_id', paymentMethod.id);
+            formData.append('address_id', document.querySelector('input[name="delivery_address"]:checked').value);
+            
+            const response = await fetch('checkout.php', {
+                method: 'POST',
+                body: formData,
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                document.getElementById('card-errors').textContent = result.message;
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Pay ₹<?php echo number_format($total_amount, 2); ?>';
+            } else if (result.requires_action) {
+                // Handle 3D Secure authentication
+                const {error: confirmationError, paymentIntent} = await stripe.handleCardAction(
+                    result.payment_intent_client_secret
+                );
+                
+                if (confirmationError) {
+                    document.getElementById('card-errors').textContent = confirmationError.message;
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Pay ₹<?php echo number_format($total_amount, 2); ?>';
+                } else {
+                    // Payment successful, redirect
+                    window.location.href = 'order-confirmation.php';
+                }
+            } else {
+                // Payment successful, redirect
+                window.location.href = 'order-confirmation.php';
+            }
+        });
+        
+        function proceedToPayment() {
+            // Validate delivery address selection
+            const deliveryAddress = document.querySelector('input[name="delivery_address"]:checked');
+            if (!deliveryAddress) {
+                alert('Please select a delivery address');
+                return;
+            }
+            
+            // Show payment section
+            document.getElementById('payment-section').classList.remove('hidden');
+            document.getElementById('payment-section').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
     <script>
         function showAddressModal() {
             document.getElementById('addressModal').style.display = 'flex';
@@ -346,19 +617,6 @@ $addresses = $addresses_stmt->get_result();
             document.getElementById('addressModal').style.display = 'none';
         }
 
-        function proceedToPayment() {
-            // Validate delivery address selection
-            const deliveryAddress = document.querySelector('input[name="delivery_address"]:checked');
-            if (!deliveryAddress) {
-                alert('Please select a delivery address');
-                return;
-            }
-
-            // Create quotation and redirect to payment
-            window.location.href = 'payment.php';
-        }
-
-        // Handle same as delivery checkbox
         document.getElementById('same_as_delivery').addEventListener('change', function() {
             const billingSection = document.getElementById('billing_address_section');
             if (this.checked) {

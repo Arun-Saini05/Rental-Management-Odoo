@@ -88,13 +88,94 @@ $related_products = $related_stmt->get_result();
             <div>
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-box text-8xl text-gray-400"></i>
+                        <?php 
+                        // Get product images
+                        $images = json_decode($product['images'] ?? '[]');
+                        
+                        // Debug: Show what we found
+                        echo "<!-- Debug: Images found: " . count($images) . " -->";
+                        echo "<!-- Debug: Raw images: " . $product['images'] . " -->";
+                        echo "<!-- Debug: Decoded: " . print_r($images, true) . " -->";
+                        
+                        if (!empty($images)) {
+                            // Clean up the image path - remove any duplicate assets/ prefixes
+                            $first_image = $images[0];
+                            echo "<!-- Debug: First image: $first_image -->";
+                            
+                            // Try different path combinations to find the actual file
+                            $possible_paths = [
+                                'assets/products/' . $first_image,
+                                '../assets/products/' . $first_image,
+                                'assets/images/' . $first_image,
+                                '../assets/images/' . $first_image,
+                                $first_image
+                            ];
+                            
+                            $found_path = null;
+                            foreach ($possible_paths as $path) {
+                                if (file_exists($path)) {
+                                    $found_path = $path;
+                                    echo "<!-- Debug: Found at: $path -->";
+                                    break;
+                                }
+                            }
+                            
+                            if ($found_path) {
+                                echo '<img src="' . $found_path . '" alt="' . htmlspecialchars($product['name']) . '" class="w-full h-full object-cover rounded-lg">';
+                                echo "<!-- Debug: Using found path: $found_path -->";
+                            } else {
+                                echo '<img src="https://picsum.photos/seed/' . $product['id'] . '/400/400.jpg" alt="' . htmlspecialchars($product['name']) . '" class="w-full h-full object-cover rounded-lg">';
+                                echo "<!-- Debug: Using fallback - no file found -->";
+                            }
+                        } else {
+                            echo '<img src="https://picsum.photos/seed/' . $product['id'] . '/400/400.jpg" alt="' . htmlspecialchars($product['name']) . '" class="w-full h-full object-cover rounded-lg">';
+                            echo "<!-- Debug: No images in database -->";
+                        }
+                        ?>
                     </div>
                     <div class="grid grid-cols-4 gap-2 mt-4">
-                        <div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75"></div>
-                        <div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75"></div>
-                        <div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75"></div>
-                        <div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75"></div>
+                        <?php 
+                        // Display thumbnail images
+                        if (!empty($images)) {
+                            foreach ($images as $index => $image) {
+                                echo "<!-- Debug: Processing thumbnail $index: $image -->";
+                                
+                                // Try different path combinations for thumbnails
+                                $possible_thumb_paths = [
+                                    'assets/products/' . $image,
+                                    '../assets/products/' . $image,
+                                    'assets/images/' . $image,
+                                    '../assets/images/' . $image,
+                                    $image
+                                ];
+                                
+                                $found_thumb_path = null;
+                                foreach ($possible_thumb_paths as $path) {
+                                    if (file_exists($path)) {
+                                        $found_thumb_path = $path;
+                                        break;
+                                    }
+                                }
+                                
+                                echo '<div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75">';
+                                if ($found_thumb_path) {
+                                    echo '<img src="' . $found_thumb_path . '" alt="Thumbnail ' . ($index + 1) . '" class="w-full h-full object-cover rounded">';
+                                    echo "<!-- Debug: Thumb found at: $found_thumb_path -->";
+                                } else {
+                                    echo '<img src="https://picsum.photos/seed/' . $product['id'] . '_' . $index . '/80/80.jpg" alt="Thumbnail ' . ($index + 1) . '" class="w-full h-full object-cover rounded">';
+                                    echo "<!-- Debug: Thumb fallback for: $image -->";
+                                }
+                                echo '</div>';
+                            }
+                        } else {
+                            // Show placeholder thumbnails
+                            for ($i = 0; $i < 4; $i++) {
+                                echo '<div class="h-20 bg-gray-200 rounded cursor-pointer hover:opacity-75">';
+                                echo '<img src="https://picsum.photos/seed/' . $product['id'] . '_thumb_' . $i . '/80/80.jpg" alt="Thumbnail ' . ($i + 1) . '" class="w-full h-full object-cover rounded">';
+                                echo '</div>';
+                            }
+                        }
+                        ?>
                     </div>
                 </div>
             </div>

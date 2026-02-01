@@ -27,9 +27,9 @@ if (function_exists('isLoggedIn') && isLoggedIn() && !isVendor()) {
                 $stmt = $db->prepare($cart_sql);
                 $stmt->bind_param("i", $customer_id);
                 $stmt->execute();
-                $cart_data = $stmt->get_result()->fetch_assoc();
-                $cart_count = $cart_data['count'] ?? 0;
-                $cart_items_count = $cart_data['total_items'] ?? 0;
+                $cart_count_row = $stmt->get_result()->fetch_assoc();
+                $cart_count = $cart_count_row['count'] ?? 0;
+                $cart_items_count = $cart_count_row['total_items'] ?? 0;
             }
         }
     } catch (Exception $e) {
@@ -107,9 +107,48 @@ if (function_exists('isLoggedIn') && isLoggedIn() && !isVendor()) {
 
                 <!-- User Menu (Show if logged in) -->
                 <?php if (function_exists('isLoggedIn') && isLoggedIn()): ?>
+                <?php 
+                // Get user profile photo
+                $user_id = $_SESSION['user_id'] ?? null;
+                $profile_photo = null;
+                
+                if ($user_id) {
+                    try {
+                        $db = new Database();
+                        $photo_sql = "SELECT profile_photo FROM users WHERE id = ?";
+                        $photo_stmt = $db->prepare($photo_sql);
+                        $photo_stmt->bind_param("i", $user_id);
+                        $photo_stmt->execute();
+                        $photo_result = $photo_stmt->get_result();
+                        $user_data = $photo_result->fetch_assoc();
+                        $profile_photo = $user_data['profile_photo'] ?? null;
+                    } catch (Exception $e) {
+                        $profile_photo = null;
+                    }
+                }
+                ?>
                 <div class="relative">
                     <button onclick="toggleProfileMenu()" class="text-gray-300 hover:text-white flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-700 transition">
-                        <i class="fas fa-user-circle text-xl"></i>
+                        <?php if ($profile_photo): ?>
+                            <?php 
+                            // Check if path already includes assets/profiles/
+                            if (strpos($profile_photo, 'assets/profiles/') === 0) {
+                                $image_path = $profile_photo;
+                            } else {
+                                $image_path = 'assets/profiles/' . $profile_photo;
+                            }
+                            
+                            // Verify file exists before displaying
+                            if (file_exists($image_path)): 
+                            ?>
+                                <img src="<?php echo $image_path; ?>" 
+                                     alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-gray-600">
+                            <?php else: ?>
+                                <i class="fas fa-user-circle text-xl"></i>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <i class="fas fa-user-circle text-xl"></i>
+                        <?php endif; ?>
                         <span class="hidden md:inline"><?php echo $_SESSION['user_name']; ?></span>
                         <i class="fas fa-chevron-down text-sm"></i>
                     </button>

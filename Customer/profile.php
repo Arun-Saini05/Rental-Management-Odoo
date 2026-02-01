@@ -31,13 +31,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $company_name = sanitizeInput($_POST['company_name'] ?? '');
     $gstin = sanitizeInput($_POST['gstin'] ?? '');
     
+    // Get current user data first to handle profile photo
+    $current_user_sql = "SELECT profile_photo FROM users WHERE id = ?";
+    $current_user_stmt = $db->prepare($current_user_sql);
+    $current_user_stmt->bind_param("i", $user_id);
+    $current_user_stmt->execute();
+    $current_user = $current_user_stmt->get_result()->fetch_assoc();
+    
+    // Handle profile photo upload
+    $profile_photo = $current_user['profile_photo'] ?? null; // Keep existing photo by default
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] == 0) {
+        $file = $_FILES['profile_photo'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $max_size = 5 * 1024 * 1024; // 5MB
+        
+        if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $filename = 'profile_' . $user_id . '_' . time() . '.' . $extension;
+            $upload_path = '../assets/profiles/' . $filename;
+            
+            if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                // Delete old photo if exists
+                if ($current_user['profile_photo'] && file_exists('../assets/profiles/' . $current_user['profile_photo'])) {
+                    unlink('../assets/profiles/' . $current_user['profile_photo']);
+                }
+                $profile_photo = $filename;
+            } else {
+                $error_message = "Failed to upload profile photo.";
+            }
+        } else {
+            $error_message = "Invalid file type or size. Please upload JPG, PNG, GIF, or WebP (max 5MB).";
+        }
+    }
+    
     // Update user information
     $update_sql = "UPDATE users SET name = ?, phone = ?, address = ?, city = ?, state = ?, 
-                   postal_code = ?, company_name = ?, gstin = ?, updated_at = CURRENT_TIMESTAMP 
+                   postal_code = ?, company_name = ?, gstin = ?, profile_photo = ?, updated_at = CURRENT_TIMESTAMP 
                    WHERE id = ?";
     $update_stmt = $db->prepare($update_sql);
-    $update_stmt->bind_param("ssssssssi", $name, $phone, $address, $city, $state, 
-                             $postal_code, $company_name, $gstin, $user_id);
+    $update_stmt->bind_param("sssssssssi", $name, $phone, $address, $city, $state, 
+                             $postal_code, $company_name, $gstin, $profile_photo, $user_id);
     
     if ($update_stmt->execute()) {
         $success_message = "Profile updated successfully!";
@@ -49,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get user details
-$sql = "SELECT id, name, email, phone, company_name, gstin, address, city, state, postal_code FROM users WHERE id = ?";
+$sql = "SELECT id, name, email, phone, company_name, gstin, address, city, state, postal_code, profile_photo FROM users WHERE id = ?";
 $stmt = $db->prepare($sql);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -79,7 +112,8 @@ $user = array_merge([
     'address' => '',
     'city' => '',
     'state' => '',
-    'postal_code' => ''
+    'postal_code' => '',
+    'profile_photo' => null
 ], $user);
 ?>
 
@@ -114,7 +148,7 @@ $user = array_merge([
                     </div>
                     <div class="p-6">
                         <?php if (isset($success_message)): ?>
-                            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                            <div id="successMessage" class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
                                 <?php echo $success_message; ?>
                             </div>
                         <?php endif; ?>
@@ -125,7 +159,10 @@ $user = array_merge([
                             </div>
                         <?php endif; ?>
                         
-                        <form method="POST" class="space-y-4">
+                        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                            <!-- Hidden file input for profile photo -->
+                            <input type="file" id="profilePhotoInput" name="profile_photo" accept="image/*" class="hidden" onchange="this.form.submit()">
+                            
                             <div class="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -192,15 +229,34 @@ $user = array_merge([
 
             <!-- Sidebar -->
             <div class="space-y-6">
-                <!-- Profile Picture -->
+                <!-- Profile Summary -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">Profile Picture</h3>
+                    <h3 class="text-lg font-semibold mb-4">Profile Summary</h3>
                     <div class="text-center">
-                        <div class="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <i class="fas fa-user text-4xl text-gray-400"></i>
+                        <div class="relative inline-block">
+                            <?php if ($user['profile_photo']): ?>
+                                <img src="../assets/profiles/<?php echo $user['profile_photo']; ?>" 
+                                     alt="Profile" class="w-24 h-24 object-cover rounded-full mx-auto mb-4 border-4 border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
+                                     onclick="document.getElementById('profilePhotoInput').click()">
+                            <?php else: ?>
+                                <div class="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
+                                     onclick="document.getElementById('profilePhotoInput').click()">
+                                    <i class="fas fa-user text-4xl text-gray-400"></i>
+                                </div>
+                            <?php endif; ?>
+                            <div class="absolute bottom-2 right-0 bg-blue-600 text-white rounded-full p-1 cursor-pointer hover:bg-blue-700"
+                                 onclick="document.getElementById('profilePhotoInput').click()">
+                                <i class="fas fa-camera text-xs"></i>
+                            </div>
                         </div>
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                            Upload Photo
+                        
+                        <h4 class="font-semibold text-lg"><?php echo $user['name']; ?></h4>
+                        <p class="text-gray-600"><?php echo $user['email']; ?></p>
+                        <p class="text-sm text-gray-500 mt-1">Member since <?php echo date('M Y', strtotime($user['created_at'] ?? 'now')); ?></p>
+                        
+                        <button type="button" onclick="document.getElementById('profilePhotoInput').click()" 
+                                class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
+                            <i class="fas fa-camera mr-2"></i>Upload Photo
                         </button>
                     </div>
                 </div>
@@ -228,6 +284,20 @@ $user = array_merge([
     </div>
 
     <script>
+        // Auto-hide success message after 3 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = document.getElementById('successMessage');
+            if (successMessage) {
+                setTimeout(function() {
+                    successMessage.style.transition = 'opacity 0.5s ease-out';
+                    successMessage.style.opacity = '0';
+                    setTimeout(function() {
+                        successMessage.remove();
+                    }, 500);
+                }, 3000);
+            }
+        });
+        
         function toggleBusinessInfo() {
             const businessInfo = document.getElementById('businessInfo');
             const toggleText = document.getElementById('toggleText');

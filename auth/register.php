@@ -368,9 +368,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             document.getElementById('selectedRole').value = role;
             console.log('Hidden input updated to:', document.getElementById('selectedRole').value); // Debug log
             
-            // Update debug display
-            document.getElementById('debugRole').textContent = role;
-            
             // Update tab styles
             document.querySelectorAll('.role-tab').forEach(tab => {
                 tab.classList.remove('active');

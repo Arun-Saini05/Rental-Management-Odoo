@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stripe Payment Test</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .error { color: red; margin: 5px 0; }
+        .success { color: green; margin: 5px 0; }
+        .container { max-width: 400px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stripe Payment Test</h1>
+        
+        <form id="payment-form">
+            <div class="form-group">
+                <label>Cardholder Name:</label>
+                <input type="text" id="cardholder-name" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Card Information:</label>
+                <div id="card-element"></div>
+                <div id="card-errors" class="error"></div>
+            </div>
+            <div class="form-group">
+                <label>Total Amount:</label>
+                <input type="text" id="total-amount" value="₹0.00" readonly>
+            </div>
+            <button type="submit" id="submit-button">
+                Pay <span id="button-text">₹0.00</span>
+            </button>
+        </form>
+    </div>
+    
+    <script>
+        // Test values
+        const testAmount = 1234.56;
+        document.getElementById('total-amount').value = '₹' + testAmount.toFixed(2);
+        document.getElementById('button-text').textContent = 'Pay ₹' + testAmount.toFixed(2);
+        
+        // Initialize Stripe
+        const stripe = Stripe('pk_test_51SvmfbENuKuGRMUgZAN8CWsIBYnjTjmukidRY8Id3xQaW5kQum78U8CNqXZAUf5pFriLDT75Z2QS0MrMLoRRP56H00ngs1baeE');
+        const elements = stripe.elements();
+        
+        // Create card element
+        const cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#424770',
+                    '::placeholder': {
+                        color: '#aab7c4',
+                    },
+                },
+            },
+        });
+        
+        // Mount card element
+        cardElement.mount('#card-element');
+        
+        // Handle card element errors
+        cardElement.on('change', ({error}) => {
+            const displayError = document.getElementById('card Elements');
+            if (error) {
+                displayError.textContent = error.message;
+            } else {
+                displayError.textContent = '';
+            }
+        });
+        
+        // Handle form submission
+        const form = document.getElementById('payment-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const submitButton = document.getElementById('submit-button');
+            const buttonText = document.getElementById('button-text');
+            
+            submitButton.disabled = true;
+            buttonText.textContent = 'Processing...';
+            
+            const {error, paymentMethod} = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: document.getElementById('cardholder-name').value,
+                    email: 'test@example.com',
+                },
+            });
+            
+            if (error) {
+                const displayError = document.getElementById('card-errors');
+                displayError.textContent = error.message;
+                submitButton.disabled = false;
+                buttonText.textContent = 'Pay ₹' + testAmount.toFixed(2);
+                return;
+            }
+            
+            console.log('Payment Method ID:', paymentMethod.id);
+            console.log('Payment Method:', paymentMethod);
+            
+            // Simulate successful payment
+            setTimeout(() => {
+                const displayError = document.getElementById('card-errors');
+                displayError.textContent = 'Payment successful! (Test Mode)';
+                displayError.className = 'success';
+                submitButton.disabled = false;
+                buttonText.textContent = 'Pay ₹' + testAmount.toFixed(2);
+            }, 2000);
+        });
+        
+        console.log('Stripe initialized successfully');
+        console.log('Card element mounted');
+        console.log('Test amount: ₹' + testAmount.toFixed(2));
+    </script>
+</body>
+</html>

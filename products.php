@@ -18,7 +18,7 @@ $brand = sanitizeInput($_GET['brand'] ?? '');
 $color = sanitizeInput($_GET['color'] ?? '');
 $duration = sanitizeInput($_GET['duration'] ?? '');
 $min_price = sanitizeInput($_GET['min_price'] ?? 10);
-$max_price = sanitizeInput($_GET['max_price'] ?? 10000);
+$max_price = sanitizeInput($_GET['max_price'] ?? 50000);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 8;
 $offset = ($page - 1) * $limit;
@@ -73,7 +73,7 @@ if ($color) {
 }
 
 if ($min_price && $max_price) {
-    $sql .= " AND p.sales_price BETWEEN ? AND ?";
+    $sql .= " AND (SELECT price FROM rental_pricing rp WHERE rp.product_id = p.id AND rp.period_type = 'day' AND rp.is_active = 1 LIMIT 1) BETWEEN ? AND ?";
     $params[] = $min_price;
     $params[] = $max_price;
     $types .= 'dd';
@@ -82,10 +82,10 @@ if ($min_price && $max_price) {
 // Add sorting
 switch ($sort) {
     case 'price_low':
-        $sql .= " ORDER BY p.sales_price ASC";
+        $sql .= " ORDER BY (SELECT price FROM rental_pricing rp WHERE rp.product_id = p.id AND rp.period_type = 'day' AND rp.is_active = 1 LIMIT 1) ASC";
         break;
     case 'price_high':
-        $sql .= " ORDER BY p.sales_price DESC";
+        $sql .= " ORDER BY (SELECT price FROM rental_pricing rp WHERE rp.product_id = p.id AND rp.period_type = 'day' AND rp.is_active = 1 LIMIT 1) DESC";
         break;
     case 'name':
         $sql .= " ORDER BY p.name ASC";
@@ -240,8 +240,8 @@ while ($color_row = $colors_result->fetch_assoc()) {
                             <label class="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
                             <div class="space-y-2">
                                 <div class="flex justify-between text-sm text-gray-400">
-                                    <span>$<?php echo $min_price; ?></span>
-                                    <span>$<?php echo $max_price; ?></span>
+                                    <span>₹<?php echo number_format($min_price); ?></span>
+                                    <span>₹<?php echo number_format($max_price); ?></span>
                                 </div>
                                 <input type="range" name="max_price" min="10" max="10000" value="<?php echo $max_price; ?>" 
                                        class="w-full" onchange="this.form.submit()">
@@ -310,7 +310,29 @@ while ($color_row = $colors_result->fetch_assoc()) {
                                             <span class="text-red-500 font-bold text-xl">Out of stock</span>
                                         </div>
                                     <?php endif; ?>
-                                    <i class="fas fa-box text-8xl text-gray-500"></i>
+                                    
+                                    <?php
+                                    // Display product image
+                                    $product_images = json_decode($product['images'] ?? '[]', true);
+                                    if (!empty($product_images) && is_array($product_images)) {
+                                        $first_image = $product_images[0];
+                                        // Check if path already includes assets/products/
+                                        if (strpos($first_image, 'assets/products/') === 0) {
+                                            $image_path = $first_image;
+                                        } else {
+                                            $image_path = 'assets/products/' . $first_image;
+                                        }
+                                        
+                                        if (file_exists($image_path)) {
+                                            echo '<img src="' . $image_path . '" alt="' . htmlspecialchars($product['name']) . '" class="w-full h-full object-cover">';
+                                        } else {
+                                            echo '<i class="fas fa-box text-8xl text-gray-500"></i>';
+                                        }
+                                    } else {
+                                        echo '<i class="fas fa-box text-8xl text-gray-500"></i>';
+                                    }
+                                    ?>
+                                    
                                     <?php if (($product['quantity_on_hand'] ?? 0) > 0 && ($product['quantity_on_hand'] ?? 0) <= 5): ?>
                                         <span class="absolute top-3 right-3 bg-orange-500 text-white px-3 py-2 text-sm rounded-full font-medium">
                                             Low Stock

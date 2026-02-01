@@ -128,7 +128,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update_stmt->execute();
             
             // Insert rental pricing
+            $has_daily_pricing = false;
             foreach ($rental_pricing as $pricing) {
+                if ($pricing['period_type'] === 'day') {
+                    $has_daily_pricing = true;
+                }
+                
                 $price_sql = "INSERT INTO rental_pricing (product_id, period_type, period_duration, 
                               price, security_deposit) VALUES (?, ?, ?, ?, ?)";
                 $price_stmt = $db->prepare($price_sql);
@@ -136,6 +141,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                        $pricing['period_duration'], $pricing['price'], 
                                        $pricing['security_deposit']);
                 $price_stmt->execute();
+            }
+            
+            // Auto-add daily pricing if not provided
+            if (!$has_daily_pricing) {
+                // Calculate daily price from existing pricing
+                $daily_price = null;
+                
+                // Find the first pricing to calculate daily price
+                foreach ($rental_pricing as $pricing) {
+                    if ($pricing['period_type'] === 'hour') {
+                        $daily_price = $pricing['price'] * 8; // 8 hours workday
+                        break;
+                    } elseif ($pricing['period_type'] === 'week') {
+                        $daily_price = $pricing['price'] / 7; // Weekly / 7 days
+                        break;
+                    } elseif ($pricing['period_type'] === 'month') {
+                        $daily_price = $pricing['price'] / 30; // Monthly / 30 days
+                        break;
+                    }
+                }
+                
+                // If no pricing found, use sales price
+                if ($daily_price === null && $sales_price > 0) {
+                    $daily_price = $sales_price;
+                }
+                
+                // Default price if still null
+                if ($daily_price === null) {
+                    $daily_price = 100.00;
+                }
+                
+                // Insert daily pricing
+                $daily_sql = "INSERT INTO rental_pricing (product_id, period_type, period_duration, 
+                              price, security_deposit) VALUES (?, 'day', 1, ?, ?)";
+                $daily_stmt = $db->prepare($daily_sql);
+                $security_deposit = $daily_price * 0.5; // 50% of daily price
+                $daily_stmt->bind_param("idd", $product_id, $daily_price, $security_deposit);
+                $daily_stmt->execute();
             }
             
             // Insert product attributes

@@ -103,20 +103,40 @@ $security_deposit_total = 0;
 $cart_data = [];
 
 while ($item = $cart_items->fetch_assoc()) {
-    if ($item['daily_price']) {
-        $days = max(1, (strtotime($item['end_date']) - strtotime($item['start_date'])) / (60 * 60 * 24));
-        $item_total = $item['daily_price'] * $item['quantity'] * $days;
-        $item_deposit = ($item['security_deposit'] ?? 0) * $item['quantity'];
-        
-        $subtotal += $item_total;
-        $security_deposit_total += $item_deposit;
-        
-        $cart_data[] = array_merge($item, [
-            'days' => $days,
-            'item_total' => $item_total,
-            'item_deposit' => $item_deposit
-        ]);
+    // Debug: Check what we actually have
+    error_log("Raw cart item: " . print_r($item, true));
+    error_log("Item type: " . gettype($item));
+    
+    // Ensure we have an array
+    if (!is_array($item)) {
+        error_log("ERROR: Item is not an array, skipping");
+        continue;
     }
+    
+    // Always process items, even if no daily_price
+    $days = max(1, (strtotime($item['end_date']) - strtotime($item['start_date'])) / (60 * 60 * 24));
+    $daily_price = $item['daily_price'] ?? 0;
+    $item_total = $daily_price * ($item['quantity'] ?? 1) * $days;
+    $item_deposit = ($item['security_deposit'] ?? 0) * ($item['quantity'] ?? 1);
+    
+    $subtotal += $item_total;
+    $security_deposit_total += $item_deposit;
+    
+    $cart_data[] = array_merge($item, [
+        'days' => $days,
+        'item_total' => $item_total,
+        'item_deposit' => $item_deposit
+    ]);
+    
+    error_log("Processed cart item: " . print_r($item, true));
+}
+
+// Force cart_data to be an array of arrays if it's empty or wrong
+if (empty($cart_data) || !is_array($cart_data)) {
+    error_log("Cart data is empty or invalid, keeping cart empty");
+    $cart_data = [];
+    $subtotal = 0;
+    $security_deposit_total = 0;
 }
 
 $tax_amount = $subtotal * 0.18; // 18% GST
@@ -170,62 +190,94 @@ $total_amount = $subtotal + $tax_amount;
                         <h2 class="text-xl font-semibold text-gray-800 mb-4">Cart Items (<?php echo count($cart_data); ?>)</h2>
                         
                         <div class="space-y-4">
-                            <?php foreach ($cart_data as $item): ?>
-                                <div class="border rounded-lg p-4 hover:bg-gray-50">
-                                    <div class="flex gap-4">
-                                        <!-- Product Image -->
-                                        <div class="flex-shrink-0">
+                            <?php 
+                            // Debug information
+                            error_log("Displaying cart items - count: " . count($cart_data));
+                            error_log("Cart data type: " . gettype($cart_data));
+                            
+                            if (!empty($cart_data)): ?>
+                                <?php foreach ($cart_data as $index => $item): ?>
+                                    <?php 
+                                    error_log("Processing item $index: " . print_r($item, true));
+                                    error_log("Item type: " . gettype($item));
+                                    
+                                    if (is_array($item)): ?>
+                                        <div class="border rounded-lg p-4 hover:bg-gray-50">
+                                            <div class="flex gap-4">
+                                                <!-- Product Image -->
+                                                <div class="flex-shrink-0">
                                             <?php 
                                             $images = json_decode($item['images'] ?? '[]');
-                                            $image_url = !empty($images) ? '../assets/images/' . $images[0] : 'https://picsum.photos/seed/' . $item['id'] . '/100/100.jpg';
-                                            ?>
-                                            <img src="<?php echo $image_url; ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" 
-                                                 class="w-24 h-24 object-cover rounded-lg">
-                                        </div>
-
-                                        <!-- Product Details -->
-                                        <div class="flex-grow">
-                                            <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($item['name']); ?></h3>
-                                            <p class="text-sm text-gray-600"><?php echo htmlspecialchars($item['category_name']); ?></p>
-                                            <p class="text-sm text-gray-600">Vendor: <?php echo htmlspecialchars($item['vendor_name']); ?></p>
-                                            <p class="text-sm font-medium text-blue-600">₹<?php echo number_format($item['daily_price'], 2); ?>/day</p>
                                             
-                                            <!-- Update Form -->
-                                            <form method="POST" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
-                                                <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
-                                                <input type="hidden" name="update_cart" value="1">
+                                            $placeholder_url = 'https://picsum.photos/seed/' . ($item['id'] ?? 1) . '/100/100.jpg';
+                                            $image_src = $placeholder_url;
+                                            
+                                            if (is_array($images) && !empty($images) && is_string($images[0])) {
+                                                $first_image = str_replace('\\', '/', $images[0]);
+                                                $filename = basename($first_image);
+                                                $decoded_filename = rawurldecode($filename);
+                                                $fs_path = __DIR__ . '/../assets/products/' . $decoded_filename;
                                                 
-                                                <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" 
-                                                       min="1" class="px-2 py-1 border rounded text-sm" placeholder="Qty">
-                                                <input type="date" name="start_date" value="<?php echo $item['start_date']; ?>" 
-                                                       class="px-2 py-1 border rounded text-sm" required>
-                                                <input type="date" name="end_date" value="<?php echo $item['end_date']; ?>" 
-                                                       class="px-2 py-1 border rounded text-sm" required>
-                                                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
-                                                    Update
-                                                </button>
-                                            </form>
-                                        </div>
-
-                                        <!-- Price and Actions -->
-                                        <div class="flex flex-col items-end justify-between">
-                                            <div class="text-right">
-                                                <p class="text-sm text-gray-600"><?php echo $item['days']; ?> days × <?php echo $item['quantity']; ?> qty</p>
-                                                <p class="font-semibold text-gray-800">₹<?php echo number_format($item['item_total'], 2); ?></p>
-                                                <p class="text-sm text-gray-600">Deposit: ₹<?php echo number_format($item['item_deposit'], 2); ?></p>
-                                            </div>
+                                                if ($decoded_filename !== '' && file_exists($fs_path)) {
+                                                    $image_src = '../assets/products/' . rawurlencode($decoded_filename);
+                                                }
+                                            }
                                             
-                                            <form method="POST" class="mt-2">
-                                                <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
-                                                <input type="hidden" name="remove_from_cart" value="1">
-                                                <button type="submit" class="text-red-600 hover:text-red-700 text-sm">
-                                                    <i class="fas fa-trash mr-1"></i>Remove
-                                                </button>
-                                            </form>
+                                            echo '<img src="' . $image_src . '" alt="' . htmlspecialchars($item['name'] ?? 'Product') . '" class="w-24 h-24 object-cover rounded-lg">';
+                                            ?>
+                                                </div>
+
+                                                <!-- Product Details -->
+                                                <div class="flex-grow">
+                                                    <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($item['name'] ?? 'Unknown Product'); ?></h3>
+                                                    <p class="text-sm text-gray-600"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?></p>
+                                                    <p class="text-sm text-gray-600">Vendor: <?php echo htmlspecialchars($item['vendor_name'] ?? 'Unknown Vendor'); ?></p>
+                                                    <p class="text-sm font-medium text-blue-600">₹<?php echo number_format($item['daily_price'] ?? 0, 2); ?>/day</p>
+                                                    
+                                                    <!-- Update Form -->
+                                                    <form method="POST" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                                        <input type="hidden" name="product_id" value="<?php echo $item['id'] ?? 0; ?>">
+                                                        <input type="number" name="quantity" value="<?php echo $item['quantity'] ?? 1; ?>" min="1" max="10" class="px-2 py-1 border rounded">
+                                                        <input type="date" name="start_date" value="<?php echo htmlspecialchars($item['start_date'] ?? ''); ?>" class="px-2 py-1 border rounded">
+                                                        <input type="date" name="end_date" value="<?php echo htmlspecialchars($item['end_date'] ?? ''); ?>" class="px-2 py-1 border rounded">
+                                                        <button type="submit" name="update_cart" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                                            <i class="fas fa-edit mr-1"></i>Update
+                                                        </button>
+                                                    </form>
+                                                    
+                                                    <div class="mt-2 text-sm text-gray-600">
+                                                        <?php echo ($item['days'] ?? 1); ?> days × <?php echo ($item['quantity'] ?? 1); ?> qty
+                                                    </div>
+                                                    <div class="font-semibold text-gray-800">₹<?php echo number_format($item['item_total'] ?? 0, 2); ?></div>
+                                                    <div class="text-sm text-gray-600">Deposit: ₹<?php echo number_format($item['item_deposit'] ?? 0, 2); ?></div>
+                                                    
+                                                    <!-- Remove Form -->
+                                                    <form method="POST" class="mt-2">
+                                                        <input type="hidden" name="product_id" value="<?php echo $item['id'] ?? 0; ?>">
+                                                        <button type="submit" name="remove_from_cart" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                                            <i class="fas fa-trash mr-1"></i>Remove
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    <?php else: ?>
+                                        <div class="border rounded-lg p-4 bg-red-50">
+                                            <p class="text-red-600">Error: Invalid cart item data (type: <?php echo gettype($item); ?>)</p>
+                                            <p class="text-red-500 text-sm">Value: <?php echo htmlspecialchars(print_r($item, true)); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="border rounded-lg p-8 text-center">
+                                    <p class="text-gray-500">No items in cart</p>
+                                    <p class="text-gray-400 text-sm mt-2">Cart data count: <?php echo count($cart_data); ?></p>
+                                    <p class="text-gray-400 text-sm">Cart data type: <?php echo gettype($cart_data); ?></p>
+                                    <a href="../products.php" class="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                                        Browse Products
+                                    </a>
                                 </div>
-                            <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

@@ -59,7 +59,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $item_total = $item['daily_price'] * $item['quantity'] * $days;
             
             $images = json_decode($item['images'] ?? '[]');
-            $image_url = !empty($images) ? '../assets/images/' . $images[0] : 'https://picsum.photos/seed/' . $item['id'] . '/200/150.jpg';
+            
+            // Clean up the image path - remove any duplicate assets/ prefixes
+            if (!empty($images)) {
+                $first_image = $images[0];
+                // Remove any leading ../assets/ or assets/ from the image path
+                $clean_image = preg_replace('/^(\.\.\/)?assets\//', '', $first_image);
+                $image_url = '../assets/products/' . $clean_image;
+                
+                // Check if file exists and use fallback if not
+                if (!file_exists($image_url)) {
+                    $image_url = 'https://picsum.photos/seed/' . $item['id'] . '/200/150.jpg';
+                }
+            } else {
+                $image_url = 'https://picsum.photos/seed/' . $item['id'] . '/200/150.jpg';
+            }
             
             $items[] = [
                 'id' => $item['id'],
