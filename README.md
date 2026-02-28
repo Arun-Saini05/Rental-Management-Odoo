@@ -214,13 +214,8 @@ This project is open-source and available under the MIT License.
 
 ## Support
 
-For support and questions:
-- Email: info@rentalhub.com
-- Documentation: Check the inline code comments
-- FAQ: Available in the customer dashboard
-
 ---
 
-**Developed for Hackathon 2024**
+**Developed for Hackathon 2026**
 **Duration: 24 hours**
 **Tech Stack: PHP, MySQL, Tailwind CSS**
